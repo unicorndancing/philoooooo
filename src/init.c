@@ -6,13 +6,13 @@
 /*   By: mlapique <mlapique@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/25 15:18:03 by mlapique          #+#    #+#             */
-/*   Updated: 2024/07/14 17:16:26 by mlapique         ###   ########.fr       */
+/*   Updated: 2024/08/13 14:41:48 by mlapique         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../include/philo.h"
 
-int	init_forks(t_config *config)
+int	init_mutex(t_config *config)
 {
 	int	i;
 
@@ -26,6 +26,14 @@ int	init_forks(t_config *config)
 			return (-1);
 		i++;
 	}
+	if (pthread_mutex_init(config->dead_rights, NULL) != 0)
+		return (-1);
+	if (pthread_mutex_init(config->end_rights, NULL) != 0)
+		return (-1);
+	if (pthread_mutex_init(config->print_rights, NULL) != 0)
+		return (-1);
+	if (pthread_mutex_init(config->meal_rights, NULL) != 0)
+		return (-1);
 	return (0);
 }
 
@@ -47,27 +55,41 @@ void	init_philos(t_config *config)
 	}
 }
 
-int	init_config2(t_config *config)
+int	init_config3(t_config *config)
 {
 	config->dead_rights = malloc(sizeof(pthread_mutex_t));
-	config->meal_rights = malloc(sizeof(pthread_mutex_t));
-	config->print_rights = malloc(sizeof(pthread_mutex_t));
-	config->end_rights = malloc(sizeof(pthread_mutex_t));
-	if (!config->dead_rights || !config->meal_rights || \
-	!config->print_rights || !config->end_rights)
+	if (!config->dead_rights)
 		return (-1);
+	config->meal_rights = malloc(sizeof(pthread_mutex_t));
+	if (!config->meal_rights)
+		return (free(config->dead_rights), -1);
+	config->print_rights = malloc(sizeof(pthread_mutex_t));
+	if (!config->print_rights)
+		return (free(config->dead_rights), free(config->meal_rights), -1);
+	config->end_rights = malloc(sizeof(pthread_mutex_t));
+	if (!config->end_rights)
+		return (free(config->dead_rights), free(config->meal_rights), \
+		free(config->print_rights), -1);
 	config->threads = malloc(sizeof(pthread_t) * (config->nb_philo + 2));
 	if (config->threads == NULL)
-		return (-1);
+		return (free(config->dead_rights), free(config->meal_rights), \
+		free(config->end_rights), free(config->print_rights), -1);
 	config->philos = malloc(sizeof(t_philo) * config->nb_philo);
-	if (pthread_mutex_init(config->print_rights, NULL) != 0 || \
-	pthread_mutex_init(config->dead_rights, NULL) != 0 || \
-	pthread_mutex_init(config->meal_rights, NULL) != 0 || \
-	pthread_mutex_init(config->end_rights, NULL) != 0)
+	if (config->philos == NULL)
+		return (free(config->dead_rights), free(config->meal_rights), \
+		free(config->end_rights), free(config->print_rights), \
+		free(config->threads), -1);
+	return (0);
+}
+
+int	init_config2(t_config *config)
+{
+	if (init_config3(config) != 0)
 		return (-1);
-	if (init_forks(config) == -1)
-		return (free(config->threads), \
-		free(config->philos), free(config->print_rights), -6);
+	if (init_mutex(config) == -1)
+		return (free(config->dead_rights), free(config->meal_rights), \
+		free(config->end_rights), free(config->print_rights), \
+		free(config->threads), free(config->philos), -1);
 	init_philos(config);
 	return (0);
 }
@@ -86,8 +108,8 @@ int	init_config(t_config *config, int argc, char **argv)
 		config->nb_eat = ft_atoi(argv[5]);
 	else
 		config->nb_eat = -1;
-	if (config->nb_philo < 1 || config->time_to_die < 20 \
-	|| config->time_to_eat < 20 || config->time_to_sleep < 20 \
+	if (config->nb_philo < 1 || config->time_to_die < 10 \
+	|| config->time_to_eat < 10 || config->time_to_sleep < 10 \
 	|| config->nb_philo > 210)
 		return (-6);
 	return (init_config2(config));

@@ -6,7 +6,7 @@
 /*   By: mlapique <mlapique@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/06/25 15:18:08 by mlapique          #+#    #+#             */
-/*   Updated: 2024/08/12 16:30:33 by mlapique         ###   ########.fr       */
+/*   Updated: 2024/08/13 14:10:10 by mlapique         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,19 +83,19 @@ int	start_simulation(t_config *config)
 {
 	int	i;
 
-	i = -1;
+	i = 0;
 	config->start_time = get_time();
 	if (config->start_time == -1)
 		return (1);
 	if (config->nb_philo == 1)
+		return (one_philo(config));
+	while (i < config->nb_philo)
 	{
-		one_philo(config);
-		return (0);
-	}
-	while (++i < config->nb_philo)
 		if (pthread_create(&config->threads[i], NULL, &routine,
 				&config->philos[i]) != 0)
 			return (1);
+		i++;
+	}
 	if (pthread_create(&config->threads[i], NULL, &check_deaths, config) != 0)
 		return (1);
 	if (pthread_create(&config->threads[i + 1], NULL, &did_everyone_eat_enough,
